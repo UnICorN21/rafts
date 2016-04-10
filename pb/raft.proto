@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package continuedb.rafts.pb;
+option go_package = "pb";
+
+import weak "github.com/gogo/protobuf/gogoproto/gogo.proto";;
+
+
+service Raft {
+    rpc Pipe (Message) returns (Response);
+}
+
+enum MessageState {
+    StateOk = 0;
+    StateRaftNotExist = 1;
+    StateRaftStopped = 2;
+    StateFailed = 3;
+}
+
+message NodeMeta {
+    uint64 id = 1;
+    string addr = 2;
+}
+
+message Response {
+    MessageState State = 1;
+    // Node will be set iff the State equals to teRaftNotExist
+    // and Lookup on the server returns a different value.
+    NodeMeta Container = 2;
+}
+
+message RaftMeta {
+    uint64 Term = 1;
+    uint64 Vote = 2;
+    uint64 Commit = 3;
+}
+
+enum ConfChangeType {
+    ConfChangeAddNode = 0;
+    ConfChangeRemoveNode = 1;
+}
+
+message ConfChange {
+    ConfChangeType Type = 1;
+    uint64 Node = 2;
+}
+
+message Configuration {
+    repeated uint64 Nodes = 1;
+}
+
+message Snapshot {
+    Configuration Conf = 1;
+    uint64 Index = 2;
+    uint64 Term = 3;
+    bytes Data = 4;
+}
+
+enum EntryType {
+    EntryNormal = 0;
+    EntryConfChange = 1;
+}
+
+message Entry {
+    EntryType Type = 1;
+    uint64 Index = 2;
+    uint64 Term = 3;
+    bytes Data = 4;
+}
+
+enum MessageType {
+    MsgApp = 0;
+    MsgAppResp = 1;
+    MsgProp = 2;
+    MsgSnap = 3;
+    MsgHeartbeat = 4;
+    MsgHeartbeatResp = 5;
+    MsgVote = 6;
+    MsgVoteResp = 7;
+}
+
+message Message {
+    MessageType Type = 1;
+    uint64 From = 2;
+    uint64 To = 3;
+    // The sender's current term
+    uint64 Term = 4;
+    uint64 PrevTerm = 5;
+    uint64 PrevIndex = 6;
+    // Committed index
+    uint64 Commit = 7;
+    repeated Entry Entries = 8 [(gogoproto.nullable) = false];
+    bool Reject = 9;
+    Snapshot Snap = 10;
+}
